@@ -3,13 +3,24 @@ language: php
 php:
 - 7.1
 
-install:
-  - composer install
-
 before_script:
-- curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-- chmod +x ./cc-test-reporter
-- ./cc-test-reporter before-build
+  - phpenv config-rm xdebug.ini || true
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - composer install --prefer-source --no-interaction --dev
+  - cp .env.travis .env
+  - php artisan migrate
+  - ./cc-test-reporter before-build
+
+  before_install:
+  - phpenv config-rm xdebug.ini || true
+  - cp .env.travis .env
+  - mysql -e 'CREATE DATABASE locale-api_testing;'
+
+
+
+install:
+  -  travis_retry composer install --no-interaction --prefer-source
 
 script:
   - "phpunit --coverage-text --coverage-clover build/logs/clover.xml"
