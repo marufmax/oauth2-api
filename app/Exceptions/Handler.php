@@ -36,15 +36,34 @@ class Handler extends ExceptionHandler
         parent::report($exception);
     }
 
-    /**
-     * Render an exception into an HTTP response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Exception  $exception
-     * @return \Illuminate\Http\Response
-     */
     public function render($request, Exception $exception)
     {
+        if ($request->wantsJson()) {
+            $response = [
+                'message' => (string)$exception->getMessage(),
+                'status' => 400
+            ];
+            if ($exception instanceof HttpException) {
+                $response['message'] = Response::$statusTexts[$exception->getStatusCode()];
+                $response['status'] = $exception->getStatusCode();
+            }
+            if ($this->isDebugMode()) {
+                $response['debug'] = [
+                    'exception' => get_class($exception),
+                    'trace' => $exception->getTrace()
+                ];
+            }
+            return response()->json(['error' => $response], $response['status']);
+        }
         return parent::render($request, $exception);
+    }
+    /**
+     * Determine if the application is debug mode
+     *
+     * @return boolean
+     */
+    public function isDebugMode() : boolean
+    {
+        return (Boolean) env('APP_DEBUG');
     }
 }
